@@ -1,0 +1,152 @@
+\documentclass{article}
+
+\usepackage[spanish]{babel}
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{graphics}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+
+\definecolor{codegray}{gray}{0.95}
+
+\lstset{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    numbers=left,
+    numbersep=8pt,
+    frame=single,
+    framerule=0.5pt,
+    tabsize=2,
+    inputencoding=utf8,
+    extendedchars=true,
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+}
+
+\title{Arquitectura Aplicacion Movil}
+\author{Manuel Añel García}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+En este documento se va a explicar el trabajo de SGE que consta de 4 actividades en las que se van a modificar, crear y ampliar módulos de Odoo, para poder empezar con esta práctica hay que reutilizar el contenedor que teniamos ya de Odoo y clonar el repositorio de módulos dicho en los requisitos de la práctica.
+
+\section{Actividad 01}
+    
+Primero tenemos que activar el modulo en el que vamos a trabajar, buscamos "lista de tareas" y activamos.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/modulo-lista-tareas.png}
+\end{figure}
+
+Tenemos que entrar en addons al modulo EJ02-ListaTareas y vamos a su view.xml para hacer otra vista pero en formato kanban, para empezar tenemos que agregar kanban en el view mode como se ve a continuación.
+
+\begin{figure}[H]
+\begin{lstlisting}
+<field name="view_mode">list,form,kanban</field>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Hay que crear un nuevo record que va a pertenecer al formato kanaban, en los comentarios del código está explicado el funcionamiento 
+\begin{lstlisting}
+<record id="view_lista_tareas_kanban" model="ir.ui.view">
+    <!-- Definimos el nombre interno, modelo odoo y arquitectura -->
+    <field name="name">lista.tareas.kanban</field>
+    <field name="model">lista_tareas.lista</field>
+    <field name="arch" type="xml">
+
+    <kanban>
+        <!-- Definimos los campos del modelo -->
+        <field name="tarea"/>
+        <field name="prioridad"/>
+        <field name="urgente"/>
+        <field name="realizada"/>
+
+        <templates>
+            <!-- Creamos una caja kanban -->
+            <t t-name="kanban-box">
+                <div class="oe_kanban_global_click o_kanban_record">
+                    
+                    <!-- Título de la tarea -->
+                    <div class="o_kanban_record_top">
+                        <strong><t t-esc="record.tarea.value"/></strong>
+                    </div>
+
+                    <!-- Prioridad -->
+                    <div>
+                        Prioridad: <t t-esc="record.prioridad.value"/>
+                    </div>
+
+                    <!-- Checkbox realizada --> 
+                    <div>
+                        Realizada: <field name="realizada"/>
+                    </div>
+
+                    <!-- Checkbox urgente --> 
+                    <div>
+                        Urgente: <field name="urgente"/>
+                    </div>
+
+                </div>
+            </t>
+        </templates>
+    </kanban>
+
+    </field>
+</record>
+\end{lstlisting}
+\end{figure}
+
+Podemos ver como se ve la lista de tareas en formato kanban y como se puede alternar la vista arriba a la derecha
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/lista-tareas-kanban.png}
+\end{figure}
+
+\begin{figure}[H]Ahora hay que modificar las tareas para que tengan una fecha asignada y crear una nueva vista para visualizarlas en un formato Calendario según esa fecha. Empezamos poniendo en el archivo python un nuevo campo que va a ser fecha con formato Date.
+\begin{lstlisting}
+fecha = fields.Date(string="Fecha")
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H]Agregamos el campo fecha en la vista list y form
+\begin{lstlisting}
+<field name="fecha"/> 
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H]Donde antes pusimos kanban para para añadir el modo kanban hacemos lo mismo pero con calendar.
+\begin{lstlisting}
+<field name="view_mode">list,form,kanban,calendar</field>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H]Ahora creamos el nuevo record para hacer la nueva vista
+\begin{lstlisting}
+<record id="view_lista_tareas_calendar" model="ir.ui.view">
+    <!-- Definimos el nombre interno, modelo odoo y arquitectura -->
+    <field name="name">lista.tareas.calendar</field>
+    <field name="model">lista_tareas.lista</field>
+    <field name="arch" type="xml">
+        <!-- Creamos el calendario y decimos con el date_start que se coloque mediante el campo fecha -->
+        <calendar string="Calendario de tareas" date_start="fecha">
+            <!-- Se muestra el nombre de la tarea -->
+            <field name="tarea"/>
+        </calendar>
+    </field>
+</record>
+\end{lstlisting}
+\end{figure}
+
+Vemos como se muestra correctamente en la fecha que puse
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/lista-tareas-calendario.png}
+\end{figure}
+
+
+\end{document}
