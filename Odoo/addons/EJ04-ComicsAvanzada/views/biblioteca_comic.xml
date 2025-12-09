@@ -23,10 +23,8 @@
     <menuitem name="Mi biblioteca" id="biblioteca_base_menu" />
 
     <!-- Menú hijo con acción asociada -->
-    <menuitem name="Cómics"
-              id="biblioteca_comic_menu"
-              parent="biblioteca_base_menu"
-              action="biblioteca_comic_action" />
+    <menuitem name="Cómics" id="biblioteca_comic_menu" parent="biblioteca_base_menu" action="biblioteca_comic_action"/>
+
 
     <!-- ======================================================
          VISTA FORMULARIO (para ver y editar un cómic)

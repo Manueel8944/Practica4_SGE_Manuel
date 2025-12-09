@@ -13,10 +13,8 @@
     <!-- ======================================================
          Menú que muestra las categorías
          ====================================================== -->
-    <menuitem id="menu_categoria"
-              name="Categorías"
-              parent="biblioteca_base_menu"
-              action="action_biblioteca_categoria" />
+
+    <menuitem name="Categorías" id="menu_categoria" parent="biblioteca_base_menu" action="action_biblioteca_categoria"/>
 
     <!-- ======================================================
          Vista FORMULARIO de la categoría

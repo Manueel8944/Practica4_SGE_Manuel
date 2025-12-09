@@ -1,0 +1,41 @@
+<odoo>
+    <record id="biblioteca_ejemplar_action" model="ir.actions.act_window">
+        <field name="name">Ejemplares de Cómics</field>
+        <field name="res_model">biblioteca.ejemplar</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem name="Ejemplares" id="menu_biblioteca_ejemplar" parent="biblioteca_base_menu" action="biblioteca_ejemplar_action"/>
+
+    <!-- Vista Formulario -->
+    <record id="view_form_ejemplar" model="ir.ui.view">
+        <field name="name">Formulario Ejemplar</field>
+        <field name="model">biblioteca.ejemplar</field>
+        <field name="arch" type="xml">
+            <form string="Ejemplar de Cómic">
+                <group>
+                    <field name="comic_id"/>
+                    <field name="socio_id"/>
+                    <field name="estado" readonly="1"/>
+                    <field name="fecha_prestamo"/>
+                    <field name="fecha_devolucion_prevista"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Lista -->
+    <record id="view_list_ejemplar" model="ir.ui.view">
+        <field name="name">Lista Ejemplares</field>
+        <field name="model">biblioteca.ejemplar</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="comic_id"/>
+                <field name="socio_id"/>
+                <field name="estado"/>
+                <field name="fecha_prestamo"/>
+                <field name="fecha_devolucion_prevista"/>
+            </list>
+        </field>
+    </record>
+</odoo>

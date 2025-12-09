@@ -35,19 +35,10 @@ Gestor de Biblioteca de Cómics
     # Archivos cargados con el módulo
     # ===============================
     'data': [
-        # -----------------------------------------
-        # Seguridad: primero se cargan los permisos
-        # -----------------------------------------
-        'security/ir.model.access.csv',     # Permisos de acceso a los modelos
-
-        # -----------------------------------------
-        # Vistas del modelo biblioteca.comic
-        # -----------------------------------------
-        'views/biblioteca_comic.xml',
-
-        # -----------------------------------------
-        # Vistas del modelo biblioteca.comic.categoria
-        # -----------------------------------------
-        'views/biblioteca_comic_categoria.xml',
+    'security/ir.model.access.csv',
+    'views/biblioteca_comic.xml',
+    'views/biblioteca_comic_categoria.xml',
+    'views/biblioteca_socio.xml',
+    'views/biblioteca_ejemplar.xml',
     ],
 }

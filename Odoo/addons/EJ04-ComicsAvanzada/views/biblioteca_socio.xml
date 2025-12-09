@@ -1,0 +1,42 @@
+<odoo>
+
+    <record id="biblioteca_socio_action" model="ir.actions.act_window">
+        <field name="name">Socios</field>
+        <field name="res_model">biblioteca.socio</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p>
+                Crea y gestiona los socios de la biblioteca.
+            </p>
+        </field>
+    </record>
+
+    <menuitem name="Socios" id="menu_biblioteca_socio" parent="biblioteca_base_menu" action="biblioteca_socio_action"/>
+
+    <record id="list" model="ir.ui.view">
+        <field name="name">Lista de Socios</field>
+        <field name="model">biblioteca.socio</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="nombre"/>
+                <field name="apellido"/>
+                <field name="identificador"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_form_socio" model="ir.ui.view">
+        <field name="name">Formulario Socio</field>
+        <field name="model">biblioteca.socio</field>
+        <field name="arch" type="xml">
+            <form string="Socio de la Biblioteca">
+                <group>
+                    <field name="nombre"/>
+                    <field name="apellido"/>
+                    <field name="identificador"/>
+                    <field name="prestamo_ids" readonly="1"/>
+                </group>
+            </form>
+        </field>
+    </record>
+</odoo>

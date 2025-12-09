@@ -148,5 +148,234 @@ Vemos como se muestra correctamente en la fecha que puse
     \includegraphics[width=1\textwidth]{images/lista-tareas-calendario.png}
 \end{figure}
 
+\section{Actividad 02}
+Primero hay que encontrar el modulo sobre el que vamos a trabajar que es y activarlo
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/modulo-biblioteca.png}
+\end{figure}
+
+\begin{figure}[H] Aqui lo que hacemos es crear un nuevo archivo .py para manejar los socios
+\begin{lstlisting}
+class BibliotecaSocio(models.Model):
+    # Nombre interno del modelo en Odoo
+    _name = 'biblioteca.socio'
+    # Descripción del modelo
+    _description = 'Socio de la biblioteca'
+
+    # Campo para el nombre del socio, obligatorio
+    nombre = fields.Char(string='Nombre', required=True)
+    # Campo para el apellido del socio, obligatorio
+    apellido = fields.Char(string='Apellido', required=True)
+    # Campo para el identificador único del socio
+    identificador = fields.Char(string='ID Socio', required=True, unique=True)
+
+    prestamo_ids = fields.One2many( # Relación One2many: un socio puede tener varios ejemplares prestados
+        'biblioteca.ejemplar', # Es el modelo relacionado
+        'socio_id', #Es el campo en el modelo relacionado que apunta a este socio
+        string='Ejemplares Prestados'
+    )
+
+    # Método para mostrar cómo se representa cada socio en campos Many2one
+    def name_get(self):
+        result = []
+        for record in self:
+            nombre_completo = f"{record.nombre} {record.apellido} ({record.identificador})"
+            result.append((record.id, nombre_completo))
+        return result
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Ahora haay que crear una nueva vista xml para el modelo que acabamos de crear
+\begin{lstlisting}
+<odoo>
+
+    <!-- Acción que abre la vista de Socios -->
+    <record id="biblioteca_socio_action" model="ir.actions.act_window">
+        <field name="name">Socios</field> <!-- Nombre de la acción -->
+        <field name="res_model">biblioteca.socio</field> <!-- Modelo que abre -->
+        <field name="view_mode">list,form</field> <!-- Tipos de vista -->
+        <field name="help" type="html">
+            <p>
+                Crea y gestiona los socios de la biblioteca.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú que apunta a la acción de Socios -->
+    <menuitem name="Socios" id="menu_biblioteca_socio" parent="biblioteca_base_menu" action="biblioteca_socio_action"/>
+
+    <!-- Vista lista de socios -->
+    <record id="list" model="ir.ui.view">
+        <field name="name">Lista de Socios</field>
+        <field name="model">biblioteca.socio</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="nombre"/> <!-- Muestra el nombre -->
+                <field name="apellido"/> <!-- Muestra el apellido -->
+                <field name="identificador"/> <!-- Muestra el ID del socio -->
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista formulario de socio -->
+    <record id="view_form_socio" model="ir.ui.view">
+        <field name="name">Formulario Socio</field>
+        <field name="model">biblioteca.socio</field>
+        <field name="arch" type="xml">
+            <form string="Socio de la Biblioteca">
+                <group>
+                    <field name="nombre"/> <!-- Campo nombre -->
+                    <field name="apellido"/> <!-- Campo apellido -->
+                    <field name="identificador"/> <!-- Campo ID socio -->
+                    <field name="prestamo_ids" readonly="1"/> <!-- Relación con los ejemplares prestados, solo lectura -->
+                </group>
+            </form>
+        </field>
+    </record>
+
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Aqui podemos ver como se crean los socios
+    \centering
+    \includegraphics[width=1\textwidth]{images/creacion-socios.png}
+\end{figure}
+
+\begin{figure}[H] Aqui podemos ver un socio que tiene un ejemplar, esto ya lo veremos mas alante
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-socios.png}
+\end{figure}
+
+\begin{figure}[H] Ahora hay que crear un nuevo modelo para los ejemplares y tener en cuenta las fechas de prestamo.
+\begin{lstlisting}
+class BibliotecaEjemplar(models.Model):
+    _name = 'biblioteca.ejemplar'  # Nombre técnico del modelo
+    _description = 'Ejemplar de cómic prestable'  # Descripción del modelo
+
+    # Campo Many2one que enlaza con el cómic al que pertenece este ejemplar (un comic puede tener varios ejemplares)
+    comic_id = fields.Many2one(
+        'biblioteca.comic',
+        string='Cómic',  # Etiqueta que se muestra en la interfaz
+        required=True,   # Campo obligatorio
+        ondelete='cascade'  # Si se borra el cómic, se borran sus ejemplares
+    )
+
+    # Campo Many2one que enlaza con el socio que tiene prestado el ejemplar (un socio puede tener varios ejemplares)
+    socio_id = fields.Many2one(
+        'biblioteca.socio',
+        string='Prestado a'  # Etiqueta en la interfaz
+    )
+
+    # Fecha en que se realizó el préstamo
+    fecha_prestamo = fields.Date(string='Fecha de préstamo')
+    # Fecha prevista para devolver el ejemplar
+    fecha_devolucion_prevista = fields.Date(string='Fecha prevista de devolución')
+
+    # Estado del ejemplar: disponible o prestado
+    estado = fields.Selection(
+        [('disponible', 'Disponible'),
+         ('prestado', 'Prestado')],
+        string='Estado',
+        default='disponible'  # Valor por defecto
+    )
+
+    # La fecha de préstamo no puede ser futura
+    @api.constrains('fecha_prestamo')
+    def _check_fecha_prestamo(self):
+        hoy = fields.Date.today()  # Fecha actual
+        for record in self:
+            if record.fecha_prestamo and record.fecha_prestamo > hoy:
+                raise ValidationError(
+                    'La fecha de préstamo no puede ser posterior al día actual.'
+                )
+
+    #La fecha prevista de devolución no puede ser anterior a hoy
+    @api.constrains('fecha_devolucion_prevista')
+    def _check_fecha_devolucion(self):
+        hoy = fields.Date.today()  # Fecha actual
+        for record in self:
+            if record.fecha_devolucion_prevista and record.fecha_devolucion_prevista < hoy:
+                raise ValidationError(
+                    'La fecha prevista de devolución no puede ser anterior al día actual.'
+                )
+
+    # Cambio automático del estado cuando se selecciona o quita un socio
+    @api.onchange('socio_id')
+    def _onchange_socio(self):
+        for record in self:
+            if record.socio_id:  # Si hay un socio asignado
+                record.estado = 'prestado'  # Cambia a prestado
+            else:
+                record.estado = 'disponible'  # Si no hay socio, está disponible
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Ahora hay que crear una nueva vista para el modelo que acabamos de crear
+\begin{lstlisting}
+<odoo>
+
+    <!-- Acción para abrir la vista de Ejemplares (listado y formulario) -->
+    <record id="biblioteca_ejemplar_action" model="ir.actions.act_window">
+        <field name="name">Ejemplares de Cómics</field> <!-- Nombre que verá el usuario -->
+        <field name="res_model">biblioteca.ejemplar</field> <!-- Modelo al que apunta -->
+        <field name="view_mode">list,form</field> <!-- Vistas disponibles: lista y formulario -->
+    </record>
+
+    <!-- Menú que abre la acción de Ejemplares dentro del menú base "Mi biblioteca" -->
+    <menuitem name="Ejemplares" 
+              id="menu_biblioteca_ejemplar" 
+              parent="biblioteca_base_menu" 
+              action="biblioteca_ejemplar_action"/>
+
+    <!-- Vista Formulario para crear o editar un ejemplar -->
+    <record id="view_form_ejemplar" model="ir.ui.view">
+        <field name="name">Formulario Ejemplar</field> <!-- Nombre interno de la vista -->
+        <field name="model">biblioteca.ejemplar</field> <!-- Modelo asociado -->
+        <field name="arch" type="xml">
+            <form string="Ejemplar de Cómic">
+                <group>
+                    <field name="comic_id"/> <!-- Relación con el cómic correspondiente -->
+                    <field name="socio_id"/> <!-- Relación con el socio que lo tiene prestado -->
+                    <field name="estado" readonly="1"/> <!-- Estado del ejemplar (solo lectura) -->
+                    <field name="fecha_prestamo"/> <!-- Fecha del préstamo -->
+                    <field name="fecha_devolucion_prevista"/> <!-- Fecha prevista de devolución -->
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Lista para ver todos los ejemplares en forma de tabla -->
+    <record id="view_list_ejemplar" model="ir.ui.view">
+        <field name="name">Lista Ejemplares</field> <!-- Nombre interno de la vista -->
+        <field name="model">biblioteca.ejemplar</field> <!-- Modelo asociado -->
+        <field name="arch" type="xml">
+            <list>
+                <field name="comic_id"/> <!-- Columna: Cómic -->
+                <field name="socio_id"/> <!-- Columna: Socio -->
+                <field name="estado"/> <!-- Columna: Estado -->
+                <field name="fecha_prestamo"/> <!-- Columna: Fecha de préstamo -->
+                <field name="fecha_devolucion_prevista"/> <!-- Columna: Fecha prevista de devolución -->
+            </list>
+        </field>
+    </record>
+
+</odoo>
+\end{lstlisting}
+\end{figure}
+Aqui tuve un fallo porque hay que acordarse de los modelos nuevos meterlos aqui
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/biblioteca-fallo-init.png}
+\end{figure}
+Y esto lo mismo que hay que acordarse de meter las vistas nuevas
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/biblioteca-fallo-manifest.png}
+\end{figure}
+
+
+
 
 \end{document}
