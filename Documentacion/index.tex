@@ -12,6 +12,7 @@
 \definecolor{codegray}{gray}{0.95}
 
 \lstset{
+    language=Python,
     backgroundcolor=\color{codegray},
     basicstyle=\ttfamily\footnotesize,
     breaklines=true,
@@ -22,7 +23,9 @@
     tabsize=2,
     inputencoding=utf8,
     extendedchars=true,
-    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+    literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1,
+    commentstyle=\color{red}\itshape,
+    morecomment=[s][\color{red}]{<!--}{-->},
 }
 
 \title{Arquitectura Aplicacion Movil}
@@ -375,7 +378,265 @@ Y esto lo mismo que hay que acordarse de meter las vistas nuevas
     \includegraphics[width=0.5\textwidth]{images/biblioteca-fallo-manifest.png}
 \end{figure}
 
+\section{Actividad 03}
+En esta actividad hay que crear un nuevo módulo desde 0 en el que gestione un hospital con sus pacientes, médicos y consultas. Para empezar hay que crear una estructura simple de carpetas y archivos para nuestro módulo, como se ve a continuación.
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/estructura-carpetas-hospital.png}
+\end{figure}
 
+Ahora hay que rellenar los archivos básicos del módulo para que funcione el modulo y este todo enlazado. Hay que tener muy en cuenta que las nuevas vistas hay que ponerlas en el manifest y los nuevos modelos en el init dentro de models.
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/manifest-hospital.png}
+\end{figure}
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/init-hospital.png}
+\end{figure}
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/init-models-hospital.png}
+\end{figure}
+
+Tambien hay que tener en cuenta que hay que rellenar el archivo csv dentro de security para los permisos de los modelos
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/security-hospital.png}
+\end{figure}
+
+Ahora vamos a crear los modelos y las vistas, la explicacion del código está en los comentarios del mismo
+
+\begin{figure}[H] Modelo paciente
+\begin{lstlisting}
+class Paciente(models.Model):
+_name = 'hospital.paciente'
+_description = 'Paciente del hospital'
+
+name = fields.Char('Nombre y Apellidos', required=True) # El char se diferencia del text de que tiene un limite de caracteres de 255 y text no
+sintomas = fields.Text('Síntomas')
+
+# Es una relacion varios a varios, un paciente puede tener varios medicos y viceversa
+consulta_ids = fields.Many2many('hospital.medico', # Modelo destino (el otro modelo)
+                                'consulta_paciente_medico', # Nombre de la tabla intermedia en la base de datos
+                                'paciente_id', 'medico_id', # Columnas en la tabla intermedia
+                                string='Médicos que lo atendieron')
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Modelo medico
+\begin{lstlisting}
+class Medico(models.Model):
+    _name = 'hospital.medico'
+    _description = 'Medico del hospital'
+
+    name = fields.Char('Nombre y Apellidos', required=True)
+    
+    numero_colegiado = fields.Char('Número de colegiado')
+    
+    # Es una relacion varios a varios, un paciente puede tener varios medicos y viceversa
+    consulta_ids = fields.Many2many('hospital.paciente', # Modelo destino (paciente)
+                                    'consulta_paciente_medico', # Nombre de la tabla intermedia en la base de datos
+                                    'medico_id', 'paciente_id', # Columnas en la tabla intermedia
+                                    string='Pacientes atendidos')
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Modelo consulta , en este modelo es importante la funcion de crear los registros porque al hacer la consulta no se actualiza automatico en la relacion de paciente medico así que lo hacemos con la funcion
+\begin{lstlisting}
+class Consulta(models.Model):
+    _name = 'hospital.consulta'
+    _description = 'Consulta de un paciente con un médico'
+
+    paciente_id = fields.Many2one('hospital.paciente', string='Paciente', required=True) # Relacion de que un paciente puede tener varias consultas y al reves no
+    medico_id = fields.Many2one('hospital.medico', string='Médico', required=True) # Relacion de que un medico puede tener varias consultas y al reves no
+    diagnostico = fields.Text('Diagnóstico') # Texto en el que se pone el diagnóstico
+    fecha = fields.Datetime('Fecha', default=fields.Datetime.now) # Ponemos la fecha para el momento en el que se crea la consulta
+    
+    @api.model
+    def create(self, vals):
+        # Crear la consulta
+        record = super().create(vals)
+        # Actualizar Many2many del paciente-medico
+        if record.paciente_id and record.medico_id: # Verifica si estan los valores llenos
+            record.paciente_id.write({'consulta_ids': [(4, record.medico_id.id)]}) # Creamos los registros, el 4 es para añadir sin borrar nada
+            record.medico_id.write({'consulta_ids': [(4, record.paciente_id.id)]})
+        return record
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista paciente
+\begin{lstlisting}
+<odoo>
+    <record id="view_form_paciente" model="ir.ui.view">
+        <field name="name">paciente.form</field>
+        <field name="model">hospital.paciente</field>
+        <field name="arch" type="xml">
+            <form string="Paciente"> <!-- Utilizamos el form para la creacion del paciente -->
+                <sheet>
+                    <group>
+                        <field name="name"/> <!-- Eston son los atributos que se van a rellenar al crear el paciente -->
+                        <field name="sintomas"/>
+                        <field name="consulta_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_paciente" model="ir.ui.view"> <!-- La lista se usa para la visualización de los pacientes como en una lista -->
+        <field name="name">paciente.list</field>
+        <field name="model">hospital.paciente</field>
+        <field name="arch" type="xml">
+            <list string="Pacientes">
+                <field name="name"/> <!-- La informacion que se va a ver en la lista solamente va a ser el nombre -->
+            </list>
+        </field>
+    </record>
+
+    <record id="action_paciente" model="ir.actions.act_window"> <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+        <field name="name">Pacientes</field>
+        <field name="res_model">hospital.paciente</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_hospital_root" name="Hospital"/> <!-- Aqui creamos básicamente el boton del menu de arriba para cambiar entre pacientes, medicos etc... -->
+    <menuitem id="menu_paciente" name="Pacientes" parent="menu_hospital_root" action="action_paciente"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista medico
+\begin{lstlisting}
+<odoo>
+    <record id="view_form_medico" model="ir.ui.view">
+        <field name="name">medico.form</field>
+        <field name="model">hospital.medico</field>
+        <field name="arch" type="xml">
+            <form string="Médico"> <!-- Utilizamos el form para la creacion del medico -->
+                <sheet>
+                    <group>
+                        <field name="name"/> <!-- Eston son los atributos que se van a rellenar al crear el medico -->
+                        <field name="numero_colegiado"/>
+                        <field name="consulta_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_medico" model="ir.ui.view"> <!-- La lista se usa para la visualización de los medicos como en una lista -->
+        <field name="name">medico.list</field>
+        <field name="model">hospital.medico</field>
+        <field name="arch" type="xml">
+            <list string="Médicos">
+                <field name="name"/> <!-- La informacion que se va a ver en la lista solamente va a ser el nombre y el numero de colegiado -->
+                <field name="numero_colegiado"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_medico" model="ir.actions.act_window"> <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+        <field name="name">Médicos</field>
+        <field name="res_model">hospital.medico</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos básicamente el boton del menu de arriba para cambiar entre pacientes, medicos etc... -->
+    <menuitem id="menu_medico" name="Médicos" parent="menu_hospital_root" action="action_medico"/> 
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista consulta
+\begin{lstlisting}
+<odoo>
+    <record id="view_form_consulta" model="ir.ui.view">
+        <field name="name">consulta.form</field>
+        <field name="model">hospital.consulta</field>
+        <field name="arch" type="xml">
+            <form string="Consulta"> <!-- Utilizamos el form para la creacion de la consulta -->
+                <sheet>
+                    <group>
+                        <field name="paciente_id"/> <!-- Eston son los atributos que se van a rellenar al crear la consulta -->
+                        <field name="medico_id"/>
+                        <field name="diagnostico"/>
+                        <field name="fecha"/> <!-- La fecha se pone sola -->
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_consulta" model="ir.ui.view"> <!-- La lista se usa para la visualización de las consultas como en una lista -->
+        <field name="name">consulta.list</field>
+        <field name="model">hospital.consulta</field>
+        <field name="arch" type="xml">
+            <list string="Consultas">
+                <field name="paciente_id"/> <!-- La informacion que se va a ver en la lista -->
+                <field name="medico_id"/>
+                <field name="fecha"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_consulta" model="ir.actions.act_window"> <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+        <field name="name">Consultas</field>
+        <field name="res_model">hospital.consulta</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos básicamente el boton del menu de arriba para cambiar entre pacientes, medicos y consultas -->
+    <menuitem id="menu_consulta" name="Consultas" parent="menu_hospital_root" action="action_consulta"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como crear un paciente
+    \centering
+    \includegraphics[width=1\textwidth]{images/crear-paciente-hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como crear un medico
+    \centering
+    \includegraphics[width=1\textwidth]{images/crear-medico_hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como crear una consulta con los pacientes y medicos creados gracias a las relaciones
+    \centering
+    \includegraphics[width=1\textwidth]{images/crear-consulta-hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como se visualizan los pacientes desde la lista y el formulario, en el formulario se puede ver la relacion con el medico al haber creado la consulta gracias a la funcion definida
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-pacientes-hospital.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-pacientes-dentro-hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como se visualizan los medicos desde la lista y el formulario, en el formulario se puede ver la relacion con el paciente al haber creado la consulta gracias a la funcion definida
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-medicos-hospital.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-medicos-dentro-hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui podemos ver las consultas creadas
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-consultas-hospital.png}
+\end{figure}
+
+\section{Actividad 04}
 
 
 \end{document}

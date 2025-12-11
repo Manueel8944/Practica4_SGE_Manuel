@@ -1,0 +1,39 @@
+<odoo>
+    <record id="view_form_consulta" model="ir.ui.view">
+        <field name="name">consulta.form</field>
+        <field name="model">hospital.consulta</field>
+        <field name="arch" type="xml">
+            <form string="Consulta"> <!-- Utilizamos el form para la creacion de la consulta -->
+                <sheet>
+                    <group>
+                        <field name="paciente_id"/> <!-- Eston son los atributos que se van a rellenar al crear la consulta -->
+                        <field name="medico_id"/>
+                        <field name="diagnostico"/>
+                        <field name="fecha"/> <!-- La fecha se pone sola -->
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_list_consulta" model="ir.ui.view"> <!-- La lista se usa para la visualización de las consultas como en una lista -->
+        <field name="name">consulta.list</field>
+        <field name="model">hospital.consulta</field>
+        <field name="arch" type="xml">
+            <list string="Consultas">
+                <field name="paciente_id"/> <!-- La informacion que se va a ver en la lista -->
+                <field name="medico_id"/>
+                <field name="fecha"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_consulta" model="ir.actions.act_window"> <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+        <field name="name">Consultas</field>
+        <field name="res_model">hospital.consulta</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos básicamente el boton del menu de arriba para cambiar entre pacientes, medicos y consultas -->
+    <menuitem id="menu_consulta" name="Consultas" parent="menu_hospital_root" action="action_consulta"/>
+</odoo>
