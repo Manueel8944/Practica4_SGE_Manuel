@@ -28,7 +28,7 @@
     morecomment=[s][\color{red}]{<!--}{-->},
 }
 
-\title{Arquitectura Aplicacion Movil}
+\title{Practica 4 SGE}
 \author{Manuel Añel García}
 
 \begin{document}
@@ -53,6 +53,8 @@ Tenemos que entrar en addons al modulo EJ02-ListaTareas y vamos a su view.xml pa
 <field name="view_mode">list,form,kanban</field>
 \end{lstlisting}
 \end{figure}
+
+\subsection{Vista en formato Kanban}
 
 \begin{figure}[H] Hay que crear un nuevo record que va a pertenecer al formato kanaban, en los comentarios del código está explicado el funcionamiento 
 \begin{lstlisting}
@@ -110,6 +112,8 @@ Podemos ver como se ve la lista de tareas en formato kanban y como se puede alte
     \includegraphics[width=1\textwidth]{images/lista-tareas-kanban.png}
 \end{figure}
 
+\subsection{Fecha asignada y formato Calendar}
+
 \begin{figure}[H]Ahora hay que modificar las tareas para que tengan una fecha asignada y crear una nueva vista para visualizarlas en un formato Calendario según esa fecha. Empezamos poniendo en el archivo python un nuevo campo que va a ser fecha con formato Date.
 \begin{lstlisting}
 fecha = fields.Date(string="Fecha")
@@ -157,6 +161,8 @@ Primero hay que encontrar el modulo sobre el que vamos a trabajar que es y activ
     \centering
     \includegraphics[width=0.5\textwidth]{images/modulo-biblioteca.png}
 \end{figure}
+
+\subsection{Gestionar socios}
 
 \begin{figure}[H] Aqui lo que hacemos es crear un nuevo archivo .py para manejar los socios
 \begin{lstlisting}
@@ -250,6 +256,8 @@ class BibliotecaSocio(models.Model):
     \centering
     \includegraphics[width=1\textwidth]{images/ver-socios.png}
 \end{figure}
+
+\subsection{Ejemplares de comics}
 
 \begin{figure}[H] Ahora hay que crear un nuevo modelo para los ejemplares y tener en cuenta las fechas de prestamo.
 \begin{lstlisting}
@@ -411,6 +419,8 @@ Tambien hay que tener en cuenta que hay que rellenar el archivo csv dentro de se
 
 Ahora vamos a crear los modelos y las vistas, la explicacion del código está en los comentarios del mismo
 
+\subsection{Pacientes}
+
 \begin{figure}[H] Modelo paciente
 \begin{lstlisting}
 class Paciente(models.Model):
@@ -425,47 +435,6 @@ consulta_ids = fields.Many2many('hospital.medico', # Modelo destino (el otro mod
                                 'consulta_paciente_medico', # Nombre de la tabla intermedia en la base de datos
                                 'paciente_id', 'medico_id', # Columnas en la tabla intermedia
                                 string='Médicos que lo atendieron')
-\end{lstlisting}
-\end{figure}
-
-\begin{figure}[H] Modelo medico
-\begin{lstlisting}
-class Medico(models.Model):
-    _name = 'hospital.medico'
-    _description = 'Medico del hospital'
-
-    name = fields.Char('Nombre y Apellidos', required=True)
-    
-    numero_colegiado = fields.Char('Número de colegiado')
-    
-    # Es una relacion varios a varios, un paciente puede tener varios medicos y viceversa
-    consulta_ids = fields.Many2many('hospital.paciente', # Modelo destino (paciente)
-                                    'consulta_paciente_medico', # Nombre de la tabla intermedia en la base de datos
-                                    'medico_id', 'paciente_id', # Columnas en la tabla intermedia
-                                    string='Pacientes atendidos')
-\end{lstlisting}
-\end{figure}
-
-\begin{figure}[H] Modelo consulta , en este modelo es importante la funcion de crear los registros porque al hacer la consulta no se actualiza automatico en la relacion de paciente medico así que lo hacemos con la funcion
-\begin{lstlisting}
-class Consulta(models.Model):
-    _name = 'hospital.consulta'
-    _description = 'Consulta de un paciente con un médico'
-
-    paciente_id = fields.Many2one('hospital.paciente', string='Paciente', required=True) # Relacion de que un paciente puede tener varias consultas y al reves no
-    medico_id = fields.Many2one('hospital.medico', string='Médico', required=True) # Relacion de que un medico puede tener varias consultas y al reves no
-    diagnostico = fields.Text('Diagnóstico') # Texto en el que se pone el diagnóstico
-    fecha = fields.Datetime('Fecha', default=fields.Datetime.now) # Ponemos la fecha para el momento en el que se crea la consulta
-    
-    @api.model
-    def create(self, vals):
-        # Crear la consulta
-        record = super().create(vals)
-        # Actualizar Many2many del paciente-medico
-        if record.paciente_id and record.medico_id: # Verifica si estan los valores llenos
-            record.paciente_id.write({'consulta_ids': [(4, record.medico_id.id)]}) # Creamos los registros, el 4 es para añadir sin borrar nada
-            record.medico_id.write({'consulta_ids': [(4, record.paciente_id.id)]})
-        return record
 \end{lstlisting}
 \end{figure}
 
@@ -510,6 +479,41 @@ class Consulta(models.Model):
 \end{lstlisting}
 \end{figure}
 
+\begin{figure}[H]Aqui vemos como crear un paciente
+    \centering
+    \includegraphics[width=1\textwidth]{images/crear-paciente-hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como se visualizan los pacientes desde la lista y el formulario, en el formulario se puede ver la relacion con el medico al haber creado la consulta gracias a la funcion definida
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-pacientes-hospital.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-pacientes-dentro-hospital.png}
+\end{figure}
+
+\subsection{Medicos}
+
+\begin{figure}[H] Modelo medico
+\begin{lstlisting}
+class Medico(models.Model):
+    _name = 'hospital.medico'
+    _description = 'Medico del hospital'
+
+    name = fields.Char('Nombre y Apellidos', required=True)
+    
+    numero_colegiado = fields.Char('Número de colegiado')
+    
+    # Es una relacion varios a varios, un paciente puede tener varios medicos y viceversa
+    consulta_ids = fields.Many2many('hospital.paciente', # Modelo destino (paciente)
+                                    'consulta_paciente_medico', # Nombre de la tabla intermedia en la base de datos
+                                    'medico_id', 'paciente_id', # Columnas en la tabla intermedia
+                                    string='Pacientes atendidos')
+\end{lstlisting}
+\end{figure}
+
 \begin{figure}[H] Vista medico
 \begin{lstlisting}
 <odoo>
@@ -549,6 +553,46 @@ class Consulta(models.Model):
     <!-- Aqui creamos básicamente el boton del menu de arriba para cambiar entre pacientes, medicos etc... -->
     <menuitem id="menu_medico" name="Médicos" parent="menu_hospital_root" action="action_medico"/> 
 </odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como crear un medico
+    \centering
+    \includegraphics[width=1\textwidth]{images/crear-medico_hospital.png}
+\end{figure}
+
+\begin{figure}[H]Aqui vemos como se visualizan los medicos desde la lista y el formulario, en el formulario se puede ver la relacion con el paciente al haber creado la consulta gracias a la funcion definida
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-medicos-hospital.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{images/ver-medicos-dentro-hospital.png}
+\end{figure}
+
+\subsection{Consulta}
+
+\begin{figure}[H] Modelo consulta, en este modelo es importante la funcion de crear los registros porque al hacer la consulta no se actualiza automatico en la relacion de paciente medico así que lo hacemos con la funcion
+\begin{lstlisting}
+class Consulta(models.Model):
+    _name = 'hospital.consulta'
+    _description = 'Consulta de un paciente con un médico'
+
+    paciente_id = fields.Many2one('hospital.paciente', string='Paciente', required=True) # Relacion de que un paciente puede tener varias consultas y al reves no
+    medico_id = fields.Many2one('hospital.medico', string='Médico', required=True) # Relacion de que un medico puede tener varias consultas y al reves no
+    diagnostico = fields.Text('Diagnóstico') # Texto en el que se pone el diagnóstico
+    fecha = fields.Datetime('Fecha', default=fields.Datetime.now) # Ponemos la fecha para el momento en el que se crea la consulta
+    
+    @api.model
+    def create(self, vals):
+        # Crear la consulta
+        record = super().create(vals)
+        # Actualizar Many2many del paciente-medico
+        if record.paciente_id and record.medico_id: # Verifica si estan los valores llenos
+            record.paciente_id.write({'consulta_ids': [(4, record.medico_id.id)]}) # Creamos los registros, el 4 es para añadir sin borrar nada
+            record.medico_id.write({'consulta_ids': [(4, record.paciente_id.id)]})
+        return record
 \end{lstlisting}
 \end{figure}
 
@@ -596,39 +640,9 @@ class Consulta(models.Model):
 \end{lstlisting}
 \end{figure}
 
-\begin{figure}[H]Aqui vemos como crear un paciente
-    \centering
-    \includegraphics[width=1\textwidth]{images/crear-paciente-hospital.png}
-\end{figure}
-
-\begin{figure}[H]Aqui vemos como crear un medico
-    \centering
-    \includegraphics[width=1\textwidth]{images/crear-medico_hospital.png}
-\end{figure}
-
 \begin{figure}[H]Aqui vemos como crear una consulta con los pacientes y medicos creados gracias a las relaciones
     \centering
     \includegraphics[width=1\textwidth]{images/crear-consulta-hospital.png}
-\end{figure}
-
-\begin{figure}[H]Aqui vemos como se visualizan los pacientes desde la lista y el formulario, en el formulario se puede ver la relacion con el medico al haber creado la consulta gracias a la funcion definida
-    \centering
-    \includegraphics[width=1\textwidth]{images/ver-pacientes-hospital.png}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{images/ver-pacientes-dentro-hospital.png}
-\end{figure}
-
-\begin{figure}[H]Aqui vemos como se visualizan los medicos desde la lista y el formulario, en el formulario se puede ver la relacion con el paciente al haber creado la consulta gracias a la funcion definida
-    \centering
-    \includegraphics[width=1\textwidth]{images/ver-medicos-hospital.png}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{images/ver-medicos-dentro-hospital.png}
 \end{figure}
 
 \begin{figure}[H]Aqui podemos ver las consultas creadas
@@ -637,6 +651,327 @@ class Consulta(models.Model):
 \end{figure}
 
 \section{Actividad 04}
+En esta actividad como la anterior hay que crear un módulo desde cero que gestione un instituto, con sus profesores, alumnos, ciclos y modulos. Para empezar tenemos que crear la estructura de carpetas de nuestro modulo con sus modelos y sus vistas correspondientes además de sus archivos de configuración necesarios.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/estructura-carpetas-instituto.png}
+\end{figure}
+Archivos de configuracion necesarios para el funcionamiento e instalacion del módulo:
+Este es el manifest, aqui para que funcione es fundamental poner todas las vistas que tengamos
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/manifest-instituto.png}
+\end{figure}
+Este es el init, aqui hacemos que se refiera a la carpeta de models que tiene otro init que se ejecutara
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/init-instituto.png}
+\end{figure}
+Este es el init dentro de models que apunta a todos los modelos que tengamos
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/init-models-instituto.png}
+\end{figure}
+
+Ahora vamos a rellenar los archivos de los modelos y vistas para que funcione, la explicacion del código esta en los comentarios de El
+
+\begin{figure}[H] Modulo ciclo
+\begin{lstlisting}
+class Ciclo(models.Model):
+    _name = 'instituto.ciclo'
+    _description = 'Ciclo'
+
+    # Estos son los atributos del ciclo
+    name = fields.Char(string='Nombre del ciclo', required=True)
+    descripcion = fields.Text(string='Descripción')
+    
+    # Relacion con modulos, un ciclo puede tener varios modulos y un modulo solo puede estar en un ciclo
+    modulo_ids = fields.One2many('instituto.modulo', 'ciclo_id', string='Módulos')
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Modulo modulo formativo
+\begin{lstlisting}
+class Modulo(models.Model):
+    _name = 'instituto.modulo'
+    _description = 'Módulo del ciclo formativo'
+
+    # Estos son los atributos del modulo
+    name = fields.Char(string='Nombre del módulo', required=True)
+    codigo = fields.Char(string='Código')
+    
+    # Relacion con ciclo, un ciclo puede tener varios modulos y un modulo solo puede estar en un ciclo
+    ciclo_id = fields.Many2one('instituto.ciclo', string='Ciclo formativo', ondelete='cascade')
+    
+    # Relacion con profesor, un profesor puede impartir varios modulos y un modulo solo puede ser impartido por un profesor
+    profesor_id = fields.Many2one('instituto.profesor', string='Profesor')
+
+    # Relacion varios a varios con modulos-alumnos
+    alumno_ids = fields.Many2many(
+        'instituto.alumno',
+        'modulo_alumno_rel', # Nueva tabla generada
+        'modulo_id', # Atributo de la nueva tabla
+        'alumno_id', # Atributo de la nueva tabla
+        string='Alumnos matriculados'
+    )
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Modulo alumno
+\begin{lstlisting}
+class Alumno(models.Model):
+    _name = 'instituto.alumno'
+    _description = 'Alumno'
+
+    # Estos son los atributos del modulo
+    name = fields.Char(string='Nombre y apellidos', required=True)
+    dni = fields.Char(string='DNI/NIE')
+    fecha_nacimiento = fields.Date(string='Fecha de nacimiento')
+
+    # Relacion varios a varios con alumnos-modulos
+    modulo_ids = fields.Many2many(
+        'instituto.modulo',
+        'modulo_alumno_rel', # Nueva tabla generada
+        'alumno_id', # Atributo de la nueva tabla
+        'modulo_id', # Atributo de la nueva tabla
+        string='Módulos matriculados'
+    )
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Modulo profesor
+\begin{lstlisting}
+class Profesor(models.Model):
+    _name = 'instituto.profesor'
+    _description = 'Profesor'
+
+    # Estos son los atributos del modulo
+    name = fields.Char(string='Nombre y apellidos', required=True)
+    departamento = fields.Char(string='Departamento')
+    numero_colegiado = fields.Char(string='Número de identificación laboral')
+    
+    # Relacion con modulos, un profesor puede impartir varios modulos y un modulo solo puede ser impartido por un profesor
+    modulo_ids = fields.One2many('instituto.modulo', 'profesor_id', string='Módulos impartidos')
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista ciclo
+\begin{lstlisting}
+<odoo>
+    <!-- Aqui se hace un formulario para crear nuevos ciclos -->
+    <record id="view_ciclo_form" model="ir.ui.view">
+        <field name="name">instituto.ciclo.form</field>
+        <field name="model">instituto.ciclo</field>
+        <field name="arch" type="xml">
+            <form string="Ciclo Formativo">
+                <sheet>
+                    <!-- Atributos para crear ciclo -->
+                    <group>
+                        <field name="name"/>
+                        <field name="descripcion"/>
+                    </group>
+                    <!-- Esto es para poder crear un nuevo modulo desde el ciclo que estemos creando o editando -->
+                    <notebook>
+                        <page string="Módulos">
+                            <field name="modulo_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="codigo"/>
+                                    <field name="profesor_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Aqui se hace la visualización en lista -->
+    <record id="view_ciclo_list" model="ir.ui.view">
+        <field name="name">instituto.ciclo.list</field>
+        <field name="model">instituto.ciclo</field>
+        <field name="arch" type="xml">
+            <list string="Ciclos">
+                <!-- Atributos que se ven en la lista, el many2many_tags es una forma de visualizacion sencilla para poder ver varias modulos en un ciclo -->
+                <field name="name"/>
+                <field name="modulo_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+    <record id="action_ciclo" model="ir.actions.act_window">
+        <field name="name">Ciclos formativos</field>
+        <field name="res_model">instituto.ciclo</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos el boton del menu de arriba para cambiar entre vistas -->
+    <menuitem id="menu_instituto_root" name="Instituto"/>
+    <menuitem id="menu_instituto_ciclos" name="Ciclos formativos" parent="menu_instituto_root" action="action_ciclo"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista alumno
+\begin{lstlisting}
+<odoo>
+    <!-- Aqui se hace un formulario para crear nuevos alumnos -->
+    <record id="view_alumno_form" model="ir.ui.view">
+        <field name="name">instituto.alumno.form</field>
+        <field name="model">instituto.alumno</field>
+        <field name="arch" type="xml">
+            <form string="Alumno">
+                <sheet>
+                    <group>
+                        <!-- Atributos para crear alumnos -->
+                        <field name="name"/>
+                        <field name="dni"/>
+                        <field name="fecha_nacimiento"/>
+                    </group>
+                    <group>
+                        <!-- Es un atributo para añadir modulos a los alumnos, se ven de la forma many2many -->
+                        <field name="modulo_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Aqui se hace la visualización en lista -->
+    <record id="view_alumno_list" model="ir.ui.view">
+        <field name="name">instituto.alumno.list</field>
+        <field name="model">instituto.alumno</field>
+        <field name="arch" type="xml">
+            <list string="Alumnos">
+                <!-- Atributos que se ven en la lista -->
+                <field name="name"/>
+                <field name="dni"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+    <record id="action_alumno" model="ir.actions.act_window">
+        <field name="name">Alumnos</field>
+        <field name="res_model">instituto.alumno</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos el boton del menu de arriba para cambiar entre vistas -->
+    <menuitem id="menu_instituto_alumnos" name="Alumnos" parent="menu_instituto_root" action="action_alumno"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista profesor
+\begin{lstlisting}
+<odoo>
+    <!-- Aqui se hace un formulario para crear nuevos profesores -->
+    <record id="view_profesor_form" model="ir.ui.view">
+        <field name="name">instituto.profesor.form</field>
+        <field name="model">instituto.profesor</field>
+        <field name="arch" type="xml">
+            <form string="Profesor">
+                <sheet>
+                    <group>
+                        <!-- Atributos para crear profesores -->
+                        <field name="name"/>
+                        <field name="departamento"/>
+                        <field name="numero_colegiado"/>
+                    </group>
+                    <group>
+                        <!-- Es un atributo para añadir modulos a los profesores, se ven de la forma many2many -->
+                        <field name="modulo_ids" widget="many2many_tags" string="Módulos que imparte"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Aqui se hace la visualización en lista -->
+    <record id="view_profesor_list" model="ir.ui.view">
+        <field name="name">instituto.profesor.list</field>
+        <field name="model">instituto.profesor</field>
+        <field name="arch" type="xml">
+            <list string="Profesores">
+                <!-- Atributos que se ven en la lista -->
+                <field name="name"/>
+                <field name="departamento"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+    <record id="action_profesor" model="ir.actions.act_window">
+        <field name="name">Profesores</field>
+        <field name="res_model">instituto.profesor</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos el boton del menu de arriba para cambiar entre vistas -->
+    <menuitem id="menu_instituto_profesores" name="Profesores" parent="menu_instituto_root" action="action_profesor"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[H] Vista modulo
+\begin{lstlisting}
+<odoo>
+     <!-- Aqui se hace un formulario para crear nuevos modulos -->
+    <record id="view_modulo_form" model="ir.ui.view">
+        <field name="name">instituto.modulo.form</field>
+        <field name="model">instituto.modulo</field>
+        <field name="arch" type="xml">
+            <form string="Módulo">
+                <sheet>
+                    <group>
+                        <!-- Atributos para crear modulos -->
+                        <field name="name"/>
+                        <field name="codigo"/>
+                    </group>
+                    <group>
+                        <!-- Atributos para crear modulos que son relaciones -->
+                        <field name="ciclo_id"/>
+                        <field name="profesor_id"/>
+                    </group>
+                    <group>
+                        <!-- Es un atributo para añadir alumnos a los modulos, se ven de la forma many2many -->
+                        <field name="alumno_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Aqui se hace la visualización en lista -->
+    <record id="view_modulo_list" model="ir.ui.view">
+        <field name="name">instituto.modulo.list</field>
+        <field name="model">instituto.modulo</field>
+        <field name="arch" type="xml">
+            <list string="Módulos">
+                <!-- Atributos que se ven en la lista -->
+                <field name="name"/>
+                <field name="codigo"/>
+                <field name="ciclo_id"/>
+                <field name="profesor_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Aqui se determina lo que va haber en la vista que es un form y una list -->
+    <record id="action_modulo" model="ir.actions.act_window">
+        <field name="name">Módulos</field>
+        <field name="res_model">instituto.modulo</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Aqui creamos el boton del menu de arriba para cambiar entre vistas -->
+    <menuitem id="menu_instituto_modulos" name="Módulos" parent="menu_instituto_root" action="action_modulo"/>
+</odoo>
+\end{lstlisting}
+\end{figure}
 
 \end{document}
